@@ -1,3 +1,3 @@
 package main
 
-type Buckets map[BucketIndex][]sentence
+type Buckets map[BucketIndex][]Sentence

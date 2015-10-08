@@ -1,12 +1,23 @@
 package main
 
+import (
+	"bufio"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+)
+
 func check(err error) {
 	if err != nil && err != io.EOF {
 		panic(err)
 	}
 }
 
-var filename = flag.String("file", "/Users/AnimotoOverstreet/go/bin/web-Google.txt", "file to parse on")
+var filename = flag.String("file", "/Users/AnimotoOverstreet/go/bin/sentences.txt", "file to parse on")
 
 func main() {
 	flag.Parse()
@@ -22,13 +33,14 @@ func main() {
 	scanner.Scan()
 	sentenceCount, err := strconv.Atoi(scanner.Text())
 	check(err)
+	sentenceCount = 1000000
 
 	lines := make([]Sentence, sentenceCount)
 
 	index := 0
 
-	for scanner.Scan() {
-		lines[index] = scanner.Text().split(' ')[1:]
+	for index < sentenceCount && scanner.Scan() {
+		lines[index] = strings.Split(scanner.Text(), " ")[1:]
 		index++
 	}
 
@@ -52,32 +64,37 @@ func main() {
 		}
 	}
 
-	alreadyCompared := make(map[struct{sentence, sentence}]bool)
+	finish = time.Since(start)
+	fmt.Println("time to make buckets:", finish)
+	fmt.Println("number of buckets:", len(lshBuckets))
+
 	similarPairsCount := 0
+	checks := 0
+	buckets := 0
 
 	for k, sentences := range lshBuckets {
 		for i, sentence := range sentences {
-			for j := i+1; j < len(sentences); j++ {
-				if !alradyCompared[{sentence, sentences[j]}] {
-					alreadyCompared[{sentence, sentences[j]}] = true
-					alreadyCompared[{sentences[j], sentence}] = true
-					if sentence.compareWithSameLength(sentences[j]) {
-						similarPairsCount++
-					}
+			for j := i + 1; j < len(sentences); j++ {
+				checks++
+				if sentence.compareWithSameLength(sentences[j], k.location) {
+					similarPairsCount++
 				}
 			}
 
 			for _, otherSentences := range k.largerNeighbors() {
-				for _, otherSentence := range otherSentences {
-					if !alreadyCompared[{sentence, sentences[j]}] {
-						alreadyCompared[{sentence, otherSentence}] = true
-						alreadyCompared[{otherSentence, sentence}] = true
-						if sentence.compareWithLonger(otherSentence) {
-							similarPairsCount++
-						}
+				for _, otherSentence := range lshBuckets[otherSentences] {
+					checks++
+					if sentence.compareWithLonger(otherSentence) {
+						similarPairsCount++
 					}
 				}
 			}
+		}
+		buckets++
+		if buckets%10000 == 0 {
+			fmt.Println("buckets:", buckets)
+			fmt.Println("checks:", checks)
+			fmt.Println("similarPairsCount:", similarPairsCount)
 		}
 	}
 
