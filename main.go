@@ -33,7 +33,7 @@ func main() {
 	scanner.Scan()
 	sentenceCount, err := strconv.Atoi(scanner.Text())
 	check(err)
-	sentenceCount = 10
+	sentenceCount = 1000000
 
 	lines := make([]Sentence, sentenceCount)
 
@@ -68,7 +68,7 @@ func main() {
 	lshBuckets := Buckets(make(map[BucketIndex][]*Sentence))
 
 	for i, v := range lines {
-		for _, b := range v.buckets() {
+		for _, b := range v.buckets {
 			lshBuckets[b] = append(lshBuckets[b], &lines[i])
 		}
 	}
@@ -100,7 +100,7 @@ func main() {
 			}
 		}
 		buckets++
-		if buckets%10000 == 0 {
+		if buckets%100000 == 0 {
 			fmt.Println("buckets:", buckets)
 			fmt.Println("checks:", checks)
 			fmt.Println("similarPairsCount:", similarPairsCount)

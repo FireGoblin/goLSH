@@ -1,10 +1,10 @@
 package main
 
-import "fmt"
+//import "fmt"
 
 type Sentence struct {
-	sentence              []string
-	frequencySortedPrefix [2]string
+	sentence []string
+	buckets  []BucketIndex
 }
 
 func (s *Sentence) sort(freq map[string]int) {
@@ -41,24 +41,23 @@ func (s *Sentence) sort(freq map[string]int) {
 		}
 	}
 
-	s.frequencySortedPrefix = [2]string{min, secondMin}
-	fmt.Println(s.frequencySortedPrefix)
+	s.createBuckets([2]string{min, secondMin})
 }
 
-func (s *Sentence) buckets() []BucketIndex {
-	if s.frequencySortedPrefix[0] == s.frequencySortedPrefix[1] {
-		fmt.Println(BucketIndex{s.frequencySortedPrefix[0], 0, len(s.sentence) - 1})
-		return []BucketIndex{{s.frequencySortedPrefix[0], 0, len(s.sentence) - 1}}
+func (s *Sentence) createBuckets(frequencySortedPrefix [2]string) {
+	if frequencySortedPrefix[0] == frequencySortedPrefix[1] {
+		//fmt.Println(BucketIndex{s.frequencySortedPrefix[0], 0, len(s.sentence) - 1})
+		s.buckets = []BucketIndex{{frequencySortedPrefix[0], 0, len(s.sentence) - 1}}
 	}
-	fmt.Println(2)
-	return []BucketIndex{{s.frequencySortedPrefix[0], 0, len(s.sentence) - 1}, {s.frequencySortedPrefix[1], 1, len(s.sentence) - 2}}
+	//fmt.Println(2)
+	s.buckets = []BucketIndex{{frequencySortedPrefix[0], 0, len(s.sentence) - 1}, {frequencySortedPrefix[1], 1, len(s.sentence) - 2}}
 }
 
 func (s *Sentence) compareWithSameLength(target Sentence, bucketLocation int) bool {
 	//note: this is to prevent double counting
 	//thus when bucketLocation=1 it can return false event when sentences are similar
 	if bucketLocation == 1 {
-		if s.frequencySortedPrefix[0] == target.frequencySortedPrefix[0] {
+		if s.buckets[0] == target.buckets[0] {
 			//these were already compared in a different bucket
 			return false
 		}
