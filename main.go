@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -34,7 +35,7 @@ func main() {
 	scanner.Scan()
 	sentenceCount, err := strconv.Atoi(scanner.Text())
 	check(err)
-	sentenceCount = 2000000
+	//sentenceCount = 2000000
 
 	//lines := make([]Sentence, sentenceCount)
 
@@ -82,42 +83,19 @@ func main() {
 	fmt.Println("time to make buckets:", finish)
 	fmt.Println("number of buckets:", len(lshBuckets))
 
-	concurrencyCount := runtime.GOMAXPROCS(0)
+	concurrencyCount := runtime.GOMAXPROCS(0) * 8
 
-	sameWorkChan := make(chan Request, 1000000)
-	diffWorkChan := make(chan Request, 1000000)
-	responseChan := make(chan int, 1000000)
-	checks := 0
+	same, diff := gen(lshBuckets)
+
+	responseChans := make([]<-chan int, concurrencyCount*2)
 
 	for i := 0; i < concurrencyCount; i++ {
-		go sameWorker(sameWorkChan, responseChan)
-		go diffWorker(diffWorkChan, responseChan)
+		responseChans[2*i] = sameWorker(same)
+		responseChans[2*i+1] = diffWorker(diff)
 	}
 
-	for k, sentences := range lshBuckets {
-		for i, sentence := range sentences {
-			for j := i + 1; j < len(sentences); j++ {
-				checks++
-				sameWorkChan <- Request{sentence, sentences[j], k.location}
-				//similarPairsCount += sentence.compareWithSameLength(*sentences[j], k.location)
-			}
-
-			for _, otherSentence := range lshBuckets[k.largerNeighbor()] {
-				checks++
-				diffWorkChan <- Request{sentence, otherSentence, k.location}
-				//similarPairsCount += sentence.compareWithLonger(*otherSentence, k.location)
-			}
-		}
-	}
-
-	responses := 0
-
-	for i := range responseChan {
+	for i := range merge(responseChans...) {
 		similarPairsCount += i
-		responses++
-		if responses == checks {
-			break
-		}
 	}
 
 	finish = time.Since(start)
@@ -127,20 +105,73 @@ func main() {
 
 }
 
-func sameWorker(in chan Request, out chan int) {
-	for {
-		select {
-		case x := <-in:
-			out <- x.s1.compareWithSameLength(x.s2, x.location)
+func gen(lshBuckets map[BucketIndex][]*UniqueSentence) (<-chan Request, <-chan Request) {
+	sameWorkChan := make(chan Request)
+	diffWorkChan := make(chan Request)
+	go func() {
+		for k, sentences := range lshBuckets {
+			for i, sentence := range sentences {
+				for j := i + 1; j < len(sentences); j++ {
+					sameWorkChan <- Request{sentence, sentences[j], k.location}
+					//similarPairsCount += sentence.compareWithSameLength(*sentences[j], k.location)
+				}
+
+				for _, otherSentence := range lshBuckets[k.largerNeighbor()] {
+					diffWorkChan <- Request{sentence, otherSentence, k.location}
+					//similarPairsCount += sentence.compareWithLonger(*otherSentence, k.location)
+				}
+			}
 		}
-	}
+		close(sameWorkChan)
+		close(diffWorkChan)
+	}()
+	return sameWorkChan, diffWorkChan
 }
 
-func diffWorker(in chan Request, out chan int) {
-	for {
-		select {
-		case x := <-in:
+func sameWorker(in <-chan Request) <-chan int {
+	out := make(chan int)
+	go func() {
+		for x := range in {
+			out <- x.s1.compareWithSameLength(x.s2, x.location)
+		}
+		close(out)
+	}()
+	return out
+}
+
+func diffWorker(in <-chan Request) <-chan int {
+	out := make(chan int)
+	go func() {
+		for x := range in {
 			out <- x.s1.compareWithLonger(x.s2, x.location)
 		}
+		close(out)
+	}()
+	return out
+}
+
+func merge(cs ...<-chan int) <-chan int {
+	var wg sync.WaitGroup
+	out := make(chan int)
+
+	// Start an output goroutine for each input channel in cs.  output
+	// copies values from c to out until c is closed, then calls wg.Done.
+	output := func(c <-chan int) {
+		for n := range c {
+			out <- n
+		}
+		wg.Done()
 	}
+	wg.Add(len(cs))
+	for _, c := range cs {
+		go output(c)
+	}
+
+	// Start a goroutine to close out once all the output goroutines are
+	// done.  This must start after the wg.Add call.
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+	return out
 }
