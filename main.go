@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -33,7 +34,7 @@ func main() {
 	scanner.Scan()
 	sentenceCount, err := strconv.Atoi(scanner.Text())
 	check(err)
-	//sentenceCount = 2000000
+	sentenceCount = 2000000
 
 	//lines := make([]Sentence, sentenceCount)
 
@@ -81,15 +82,41 @@ func main() {
 	fmt.Println("time to make buckets:", finish)
 	fmt.Println("number of buckets:", len(lshBuckets))
 
+	concurrencyCount := runtime.GOMAXPROCS(0)
+
+	sameWorkChan := make(chan Request, 1000000)
+	diffWorkChan := make(chan Request, 1000000)
+	responseChan := make(chan int, 1000000)
+	checks := 0
+
+	for i := 0; i < concurrencyCount; i++ {
+		go sameWorker(sameWorkChan, responseChan)
+		go diffWorker(diffWorkChan, responseChan)
+	}
+
 	for k, sentences := range lshBuckets {
 		for i, sentence := range sentences {
 			for j := i + 1; j < len(sentences); j++ {
-				similarPairsCount += sentence.compareWithSameLength(*sentences[j], k.location)
+				checks++
+				sameWorkChan <- Request{sentence, sentences[j], k.location}
+				//similarPairsCount += sentence.compareWithSameLength(*sentences[j], k.location)
 			}
 
 			for _, otherSentence := range lshBuckets[k.largerNeighbor()] {
-				similarPairsCount += sentence.compareWithLonger(*otherSentence, k.location)
+				checks++
+				diffWorkChan <- Request{sentence, otherSentence, k.location}
+				//similarPairsCount += sentence.compareWithLonger(*otherSentence, k.location)
 			}
+		}
+	}
+
+	responses := 0
+
+	for i := range responseChan {
+		similarPairsCount += i
+		responses++
+		if responses == checks {
+			break
 		}
 	}
 
@@ -98,4 +125,22 @@ func main() {
 
 	fmt.Println("number of similar pairs:", similarPairsCount)
 
+}
+
+func sameWorker(in chan Request, out chan int) {
+	for {
+		select {
+		case x := <-in:
+			out <- x.s1.compareWithSameLength(x.s2, x.location)
+		}
+	}
+}
+
+func diffWorker(in chan Request, out chan int) {
+	for {
+		select {
+		case x := <-in:
+			out <- x.s1.compareWithLonger(x.s2, x.location)
+		}
+	}
 }
