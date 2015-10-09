@@ -1,56 +1,14 @@
 package main
 
-//import "fmt"
+import "strings"
 
 type Sentence struct {
 	sentence []string
 	buckets  []BucketIndex
 }
 
-func (s *Sentence) sort(freq map[string]int) {
-	var min string
-	var secondMin string
-
-	var minVal int
-	var secondMinVal int
-
-	if freq[s.sentence[0]] < freq[s.sentence[1]] {
-		min = s.sentence[0]
-		minVal = freq[s.sentence[0]]
-
-		secondMin = s.sentence[1]
-		secondMinVal = freq[s.sentence[1]]
-	} else {
-		min = s.sentence[1]
-		minVal = freq[s.sentence[1]]
-
-		secondMin = s.sentence[0]
-		secondMinVal = freq[s.sentence[0]]
-	}
-
-	for _, v := range s.sentence[2:] {
-		if freq[v] < minVal {
-			secondMin = min
-			secondMinVal = minVal
-
-			min = v
-			minVal = freq[v]
-		} else if freq[v] < secondMinVal {
-			secondMin = v
-			secondMinVal = freq[v]
-		}
-	}
-
-	s.createBuckets([2]string{min, secondMin})
-}
-
-func (s *Sentence) createBuckets(frequencySortedPrefix [2]string) {
-	if frequencySortedPrefix[0] == frequencySortedPrefix[1] {
-		//fmt.Println(BucketIndex{s.frequencySortedPrefix[0], 0, len(s.sentence) - 1})
-		s.buckets = []BucketIndex{{frequencySortedPrefix[0], 0, len(s.sentence) - 1}}
-	}
-	//fmt.Println(2)
-	s.buckets = []BucketIndex{{frequencySortedPrefix[0], 0, len(s.sentence) - 1}, {frequencySortedPrefix[1], 1, len(s.sentence) - 2}}
+func (s *Sentence) createBuckets() {
+	s.buckets = []BucketIndex{{strings.Join(s.sentence[0:4], " "), 0, len(s.sentence)}, {strings.Join(s.sentence[len(s.sentence)-4:len(s.sentence)], " "), 1, len(s.sentence)}}
 }
 
 func (s *Sentence) compareWithSameLength(target Sentence, bucketLocation int) bool {
@@ -80,7 +38,14 @@ func (s *Sentence) compareWithSameLength(target Sentence, bucketLocation int) bo
 	return true
 }
 
-func (s *Sentence) compareWithLonger(target Sentence) bool {
+func (s *Sentence) compareWithLonger(target Sentence, bucketLocation int) bool {
+	// if bucketLocation == 1 {
+	// 	if s.buckets[0] == target.buckets[0] {
+	// 		//these were already compared in a different bucket
+	// 		return false
+	// 	}
+	// }
+
 	offset := 0
 	for i, v := range s.sentence {
 		if v != target.sentence[i+offset] {

@@ -33,19 +33,14 @@ func main() {
 	scanner.Scan()
 	sentenceCount, err := strconv.Atoi(scanner.Text())
 	check(err)
-	sentenceCount = 1000000
+	sentenceCount = 2000000
 
 	lines := make([]Sentence, sentenceCount)
 
 	index := 0
 
-	frequencies := make(map[string]int)
-
 	for index < sentenceCount && scanner.Scan() {
 		lines[index].sentence = strings.Split(scanner.Text(), " ")[1:]
-		for _, v := range lines[index].sentence {
-			frequencies[v]++
-		}
 		index++
 	}
 
@@ -62,10 +57,10 @@ func main() {
 	start = time.Now()
 
 	for i, _ := range lines {
-		lines[i].sort(frequencies)
+		lines[i].createBuckets()
 	}
 
-	lshBuckets := Buckets(make(map[BucketIndex][]*Sentence))
+	lshBuckets := make(map[BucketIndex][]*Sentence)
 
 	for i, v := range lines {
 		for _, b := range v.buckets {
@@ -90,12 +85,10 @@ func main() {
 				}
 			}
 
-			for _, otherSentences := range k.largerNeighbors() {
-				for _, otherSentence := range lshBuckets[otherSentences] {
-					checks++
-					if sentence.compareWithLonger(*otherSentence) {
-						similarPairsCount++
-					}
+			for _, otherSentence := range lshBuckets[k.largerNeighbor()] {
+				checks++
+				if sentence.compareWithLonger(*otherSentence, k.location) {
+					similarPairsCount++
 				}
 			}
 		}
