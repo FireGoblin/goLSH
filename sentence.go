@@ -4,25 +4,20 @@ import "strings"
 
 type Sentence struct {
 	sentence []string
-	buckets  []BucketIndex
 }
 
-func (s *Sentence) createBuckets() {
-	s.buckets = []BucketIndex{{strings.Join(s.sentence[0:4], " "), 0, len(s.sentence)}, {strings.Join(s.sentence[len(s.sentence)-4:len(s.sentence)], " "), 1, len(s.sentence)}}
+func (s Sentence) buckets() [2]BucketIndex {
+	return [2]BucketIndex{{strings.Join(s.sentence[0:4], " "), 0, len(s.sentence)}, {strings.Join(s.sentence[len(s.sentence)-4:len(s.sentence)], " "), 1, len(s.sentence)}}
 }
 
-func (s *Sentence) compareWithSameLength(target Sentence, bucketLocation int) bool {
-	//note: this is to prevent double counting
-	//thus when bucketLocation=1 it can return false event when sentences are similar
-	if bucketLocation == 1 {
-		if s.buckets[0] == target.buckets[0] {
-			//these were already compared in a different bucket
+func (s Sentence) compareWithSameLength(target Sentence, bucketLocation int) bool {
+	mismatchAvailable := true
+
+	for i, v := range s.sentence {
+		//duplicate check condition
+		if i == 4 && bucketLocation == 1 && mismatchAvailable {
 			return false
 		}
-	}
-
-	mismatchAvailable := true
-	for i, v := range s.sentence {
 		if v != target.sentence[i] {
 			if !mismatchAvailable {
 				return false
@@ -38,16 +33,13 @@ func (s *Sentence) compareWithSameLength(target Sentence, bucketLocation int) bo
 	return true
 }
 
-func (s *Sentence) compareWithLonger(target Sentence, bucketLocation int) bool {
-	// if bucketLocation == 1 {
-	// 	if s.buckets[0] == target.buckets[0] {
-	// 		//these were already compared in a different bucket
-	// 		return false
-	// 	}
-	// }
-
+func (s Sentence) compareWithLonger(target Sentence, bucketLocation int) bool {
 	offset := 0
 	for i, v := range s.sentence {
+		//duplicate check condition
+		if i == 4 && bucketLocation == 1 && offset == 0 {
+			return false
+		}
 		if v != target.sentence[i+offset] {
 			if offset == 1 {
 				return false

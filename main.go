@@ -33,7 +33,7 @@ func main() {
 	scanner.Scan()
 	sentenceCount, err := strconv.Atoi(scanner.Text())
 	check(err)
-	sentenceCount = 2000000
+	//sentenceCount = 2000000
 
 	lines := make([]Sentence, sentenceCount)
 
@@ -56,14 +56,10 @@ func main() {
 
 	start = time.Now()
 
-	for i, _ := range lines {
-		lines[i].createBuckets()
-	}
-
 	lshBuckets := make(map[BucketIndex][]*Sentence)
 
 	for i, v := range lines {
-		for _, b := range v.buckets {
+		for _, b := range v.buckets() {
 			lshBuckets[b] = append(lshBuckets[b], &lines[i])
 		}
 	}
