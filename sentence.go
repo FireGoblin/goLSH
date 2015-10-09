@@ -2,25 +2,34 @@ package main
 
 import "strings"
 
-type Sentence struct {
+type UniqueSentence struct {
 	sentence []string
+	count    int
 }
 
-func (s Sentence) buckets() [2]BucketIndex {
+func (s *UniqueSentence) incr() {
+	s.count++
+}
+
+func (s UniqueSentence) selfPairs() int {
+	return s.count * (s.count - 1) / 2
+}
+
+func (s UniqueSentence) buckets() [2]BucketIndex {
 	return [2]BucketIndex{{strings.Join(s.sentence[0:4], " "), 0, len(s.sentence)}, {strings.Join(s.sentence[len(s.sentence)-4:len(s.sentence)], " "), 1, len(s.sentence)}}
 }
 
-func (s Sentence) compareWithSameLength(target Sentence, bucketLocation int) bool {
+func (s UniqueSentence) compareWithSameLength(target UniqueSentence, bucketLocation int) int {
 	mismatchAvailable := true
 
 	for i, v := range s.sentence {
 		//duplicate check condition
 		if i == 4 && bucketLocation == 1 && mismatchAvailable {
-			return false
+			return 0
 		}
 		if v != target.sentence[i] {
 			if !mismatchAvailable {
-				return false
+				return 0
 			}
 			mismatchAvailable = false
 		}
@@ -30,28 +39,28 @@ func (s Sentence) compareWithSameLength(target Sentence, bucketLocation int) boo
 	// 	fmt.Println("   ", s)
 	// 	fmt.Println("   ", target)
 	// }
-	return true
+	return s.count * target.count
 }
 
-func (s Sentence) compareWithLonger(target Sentence, bucketLocation int) bool {
+func (s UniqueSentence) compareWithLonger(target UniqueSentence, bucketLocation int) int {
 	offset := 0
 	for i, v := range s.sentence {
 		//duplicate check condition
 		if i == 4 && bucketLocation == 1 && offset == 0 {
-			return false
+			return 0
 		}
 		if v != target.sentence[i+offset] {
 			if offset == 1 {
-				return false
+				return 0
 			}
 			offset++
 			if v != target.sentence[i+offset] {
-				return false
+				return 0
 			}
 		}
 	}
 	// fmt.Println("similar pair:")
 	// fmt.Println("   ", s)
 	// fmt.Println("   ", target)
-	return true
+	return s.count * target.count
 }

@@ -35,12 +35,22 @@ func main() {
 	check(err)
 	//sentenceCount = 2000000
 
-	lines := make([]Sentence, sentenceCount)
+	//lines := make([]Sentence, sentenceCount)
+
+	lines := make(map[string]*UniqueSentence)
 
 	index := 0
 
 	for index < sentenceCount && scanner.Scan() {
-		lines[index].sentence = strings.Split(scanner.Text(), " ")[1:]
+		splitLine := strings.Split(scanner.Text(), " ")[1:]
+		line := strings.Join(splitLine, " ")
+
+		_, ok := lines[line]
+		if !ok {
+			lines[line] = &UniqueSentence{splitLine, 0}
+		}
+		lines[line].incr()
+
 		index++
 	}
 
@@ -56,11 +66,14 @@ func main() {
 
 	start = time.Now()
 
-	lshBuckets := make(map[BucketIndex][]*Sentence)
+	lshBuckets := make(map[BucketIndex][]*UniqueSentence)
+
+	similarPairsCount := 0
 
 	for i, v := range lines {
+		similarPairsCount += v.selfPairs()
 		for _, b := range v.buckets() {
-			lshBuckets[b] = append(lshBuckets[b], &lines[i])
+			lshBuckets[b] = append(lshBuckets[b], lines[i])
 		}
 	}
 
@@ -68,7 +81,6 @@ func main() {
 	fmt.Println("time to make buckets:", finish)
 	fmt.Println("number of buckets:", len(lshBuckets))
 
-	similarPairsCount := 0
 	checks := 0
 	buckets := 0
 
@@ -76,16 +88,12 @@ func main() {
 		for i, sentence := range sentences {
 			for j := i + 1; j < len(sentences); j++ {
 				checks++
-				if sentence.compareWithSameLength(*sentences[j], k.location) {
-					similarPairsCount++
-				}
+				similarPairsCount += sentence.compareWithSameLength(*sentences[j], k.location)
 			}
 
 			for _, otherSentence := range lshBuckets[k.largerNeighbor()] {
 				checks++
-				if sentence.compareWithLonger(*otherSentence, k.location) {
-					similarPairsCount++
-				}
+				similarPairsCount += sentence.compareWithLonger(*otherSentence, k.location)
 			}
 		}
 		buckets++
