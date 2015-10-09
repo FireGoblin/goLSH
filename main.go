@@ -81,26 +81,15 @@ func main() {
 	fmt.Println("time to make buckets:", finish)
 	fmt.Println("number of buckets:", len(lshBuckets))
 
-	checks := 0
-	buckets := 0
-
 	for k, sentences := range lshBuckets {
 		for i, sentence := range sentences {
 			for j := i + 1; j < len(sentences); j++ {
-				checks++
 				similarPairsCount += sentence.compareWithSameLength(*sentences[j], k.location)
 			}
 
 			for _, otherSentence := range lshBuckets[k.largerNeighbor()] {
-				checks++
 				similarPairsCount += sentence.compareWithLonger(*otherSentence, k.location)
 			}
-		}
-		buckets++
-		if buckets%100000 == 0 {
-			fmt.Println("buckets:", buckets)
-			fmt.Println("checks:", checks)
-			fmt.Println("similarPairsCount:", similarPairsCount)
 		}
 	}
 
