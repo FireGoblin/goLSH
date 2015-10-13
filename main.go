@@ -37,7 +37,7 @@ func main() {
 
 	//lines := make([]Sentence, sentenceCount)
 
-	lines := make(map[string]*UniqueSentence)
+	lines := make(map[string]*uniqueSentence)
 
 	index := 0
 
@@ -47,7 +47,7 @@ func main() {
 
 		_, ok := lines[line]
 		if !ok {
-			lines[line] = &UniqueSentence{splitLine, 0}
+			lines[line] = &uniqueSentence{splitLine, 0}
 		}
 		lines[line].incr()
 
@@ -66,7 +66,7 @@ func main() {
 
 	start = time.Now()
 
-	lshBuckets := make(map[BucketIndex][]*UniqueSentence)
+	lshBuckets := make(map[bucketIndex][]*uniqueSentence)
 
 	similarPairsCount := 0
 

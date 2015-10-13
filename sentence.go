@@ -2,24 +2,24 @@ package main
 
 import "strings"
 
-type UniqueSentence struct {
+type uniqueSentence struct {
 	sentence []string
 	count    int
 }
 
-func (s *UniqueSentence) incr() {
+func (s *uniqueSentence) incr() {
 	s.count++
 }
 
-func (s UniqueSentence) selfPairs() int {
+func (s uniqueSentence) selfPairs() int {
 	return s.count * (s.count - 1) / 2
 }
 
-func (s UniqueSentence) buckets() [2]BucketIndex {
-	return [2]BucketIndex{{strings.Join(s.sentence[0:4], " "), 0, len(s.sentence)}, {strings.Join(s.sentence[len(s.sentence)-4:len(s.sentence)], " "), 1, len(s.sentence)}}
+func (s uniqueSentence) buckets() [2]bucketIndex {
+	return [2]bucketIndex{{strings.Join(s.sentence[0:4], " "), 0, len(s.sentence)}, {strings.Join(s.sentence[len(s.sentence)-4:len(s.sentence)], " "), 1, len(s.sentence)}}
 }
 
-func (s UniqueSentence) compareWithSameLength(target UniqueSentence, bucketLocation int) int {
+func (s uniqueSentence) compareWithSameLength(target uniqueSentence, bucketLocation int) int {
 	mismatchAvailable := true
 
 	for i, v := range s.sentence {
@@ -42,7 +42,7 @@ func (s UniqueSentence) compareWithSameLength(target UniqueSentence, bucketLocat
 	return s.count * target.count
 }
 
-func (s UniqueSentence) compareWithLonger(target UniqueSentence, bucketLocation int) int {
+func (s uniqueSentence) compareWithLonger(target uniqueSentence, bucketLocation int) int {
 	offset := 0
 	for i, v := range s.sentence {
 		//duplicate check condition

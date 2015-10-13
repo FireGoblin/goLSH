@@ -1,11 +1,11 @@
 package main
 
-type BucketIndex struct {
+type bucketIndex struct {
 	word      string
 	location  int
 	suffixLen int
 }
 
-func (b *BucketIndex) largerNeighbor() BucketIndex {
-	return BucketIndex{b.word, b.location, b.suffixLen + 1}
+func (b *bucketIndex) largerNeighbor() bucketIndex {
+	return bucketIndex{b.word, b.location, b.suffixLen + 1}
 }
